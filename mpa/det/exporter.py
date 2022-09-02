@@ -6,7 +6,7 @@ import os
 import torch
 import warnings
 
-from mmdet.apis import export_model
+#from mmdet.apis import export_model
 from mmdet.models import build_detector
 from mmcv.runner import load_checkpoint
 
