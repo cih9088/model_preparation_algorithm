@@ -7,6 +7,7 @@ import platform
 import shutil
 import sys
 import tempfile
+from typing import Any, Callable, Union
 import warnings
 from importlib import import_module
 
@@ -158,3 +159,15 @@ def update_or_add_custom_hook(cfg: Config, hook_cfg: ConfigDict):
     if not custom_hooks_updated:
         custom_hooks.append(hook_cfg)
     cfg['custom_hooks'] = custom_hooks
+
+
+def recursively_update_cfg(
+    cfg: Union[Config, dict],
+    criterion: Callable[[Any, Any], bool],
+    update_dict: Any,
+):
+    for k, v in list(cfg.items()):
+        if isinstance(v, dict):
+            recursively_update_cfg(v, criterion, update_dict)
+        if criterion(k, v):
+            cfg.update(update_dict)
