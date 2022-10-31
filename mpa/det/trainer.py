@@ -20,7 +20,7 @@ from torch import nn
 from .stage import DetectionStage
 
 # TODO[JAEGUK]: Remove import otx
-from otx.algorithms.detection.adapters.mmdet.utils import cluster_anchors
+from otx.algorithms.detection.adapters.mmdet.config_utils import cluster_anchors
 
 from mpa.registry import STAGES
 from mpa.modules.utils.task_adapt import extract_anchor_ratio
