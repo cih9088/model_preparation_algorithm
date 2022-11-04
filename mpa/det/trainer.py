@@ -19,9 +19,6 @@ from torch import nn
 
 from .stage import DetectionStage
 
-# TODO[JAEGUK]: Remove import otx
-from otx.algorithms.detection.adapters.mmdet.config_utils import cluster_anchors
-
 from mpa.registry import STAGES
 from mpa.modules.utils.task_adapt import extract_anchor_ratio
 from mpa.utils.logger import get_logger
@@ -119,13 +116,6 @@ class DetectionTrainer(IncrDetectionStage):
         if self.distributed:
             self._modify_cfg_for_distributed(model, cfg)
 
-        # Do clustering for SSD model
-        # TODO[JAEGUK]: Temporal Disable cluster_anchors for SSD model
-        if hasattr(cfg.model, 'bbox_head') and hasattr(cfg.model.bbox_head, 'anchor_generator'):
-            if getattr(cfg.model.bbox_head.anchor_generator, 'reclustering_anchors', False):
-                train_cfg = Stage.get_train_data_cfg(cfg)
-                train_dataset = train_cfg.get('otx_dataset', None)
-                cfg, model = cluster_anchors(cfg, train_dataset, model)
         train_detector(
             model,
             datasets,
