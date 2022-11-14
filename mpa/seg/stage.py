@@ -148,8 +148,8 @@ class SegStage(Stage):
         # FIXME : can be naive supervised learning (from-scratch ver.)
         # Check if new classes are added
         has_new_class = True if len(new_classes) > 0 else False
-        if has_new_class is False:
-            ValueError('Incremental learning should have at least one new class!')
+        #  if has_new_class is False:
+        #      ValueError('Incremental learning should have at least one new class!')
 
         # Change to incremental loss (ignore mode)
         if cfg.get('ignore', False):
