@@ -40,4 +40,4 @@ import mpa.modules.models.losses.class_balanced_losses
 import mpa.modules.models.losses.cross_entropy_loss
 import mpa.modules.models.losses.asymmetric_loss_with_ignore
 import mpa.modules.models.losses.triplet_loss
-
+import mpa.modules.models.losses.mse_loss
