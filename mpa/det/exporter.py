@@ -3,6 +3,8 @@
 #
 
 import os
+import torch
+import numpy as np
 import warnings
 import traceback
 
@@ -62,14 +64,16 @@ class DetectionExporter(DetectionStage):
                     output_path, onnx_file_name, model, cfg, deploy_cfg
                 )
             else:
-                self._naive_export(output_path, onnx_file_name, model, cfg)
+                self._origin_export(output_path, onnx_file_name, model, cfg)
         except Exception as ex:
-            # output_model.model_status = ModelStatus.FAILED
-            # raise RuntimeError('Optimization was unsuccessful.') from ex
-            return {
-                "outputs": None,
-                "msg": f"exception {type(ex)}: {ex}\n\n{traceback.format_exc()}"
-            }
+            # FIXME: conversion succssed but 245 error is returned
+            if ex.returncode != 245:
+                # output_model.model_status = ModelStatus.FAILED
+                # raise RuntimeError('Optimization was unsuccessful.') from ex
+                return {
+                    "outputs": None,
+                    "msg": f"exception {type(ex)}: {ex}\n\n{traceback.format_exc()}"
+                }
 
         bin_file = [f for f in os.listdir(output_path) if f.endswith(".bin")][0]
         xml_file = [f for f in os.listdir(output_path) if f.endswith(".xml")][0]
@@ -106,5 +110,6 @@ class DetectionExporter(DetectionStage):
 
         onnx2openvino(output_path, onnx_file_name, deploy_cfg)
 
-    def _naive_export(self, output_path, onnx_file_name, model, cfg):
-        raise NotImplementedError()
+    def _origin_export(self, output_path, model, cfg, precision):
+        from ..deploy.mmdet_export import export_model
+        export_model(model, cfg, output_path, target='openvino', precision=precision)
