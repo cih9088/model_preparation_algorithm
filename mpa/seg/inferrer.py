@@ -16,7 +16,10 @@ from mmseg.parallel import MMDataCPU
 from mpa.registry import STAGES
 from .stage import SegStage
 from mpa.stage import Stage
+from mpa.utils.logger import get_logger
 import torch
+
+logger = get_logger()
 
 
 @STAGES.register_module()
@@ -34,21 +37,22 @@ class SegInferrer(SegStage):
         self._init_logger()
         dump_features = kwargs.get('dump_features', False)
         mode = kwargs.get('mode', 'train')
+        model = kwargs.get("model", None)
         if mode not in self.mode:
             return {}
 
         cfg = self.configure(model_cfg, model_ckpt, data_cfg, training=False, **kwargs)
-        self.logger.info('infer!')
+        logger.info('infer!')
 
         mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
 
-        outputs = self.infer(cfg, dump_features)
+        outputs = self.infer(cfg, model=model, dump_features=dump_features)
 
         return dict(
             outputs=outputs
         )
 
-    def infer(self, cfg, dump_features=False):
+    def infer(self, cfg, model=None, dump_features=False):
         samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
         if samples_per_gpu > 1:
             # Replace 'ImageToTensor' to 'DefaultFormatBundle'
@@ -56,7 +60,7 @@ class SegInferrer(SegStage):
 
         # Input source
         input_source = cfg.get('input_source', 'test')
-        self.logger.info(f'Inferring on input source: data.{input_source}')
+        logger.info(f'Inferring on input source: data.{input_source}')
         if input_source == 'train':
             src_data_cfg = Stage.get_data_cfg(cfg, "train")
         else:
@@ -87,18 +91,19 @@ class SegInferrer(SegStage):
             target_classes = dataset.CLASSES
 
         # Model
-        cfg.model.pretrained = None
-        if cfg.model.get('neck'):
-            if isinstance(cfg.model.neck, list):
-                for neck_cfg in cfg.model.neck:
-                    if neck_cfg.get('rfp_backbone'):
-                        if neck_cfg.rfp_backbone.get('pretrained'):
-                            neck_cfg.rfp_backbone.pretrained = None
-            elif cfg.model.neck.get('rfp_backbone'):
-                if cfg.model.neck.rfp_backbone.get('pretrained'):
-                    cfg.model.neck.rfp_backbone.pretrained = None
-        cfg.model.test_cfg.return_repr_vector = True
-        model = build_segmentor(cfg.model, train_cfg=None, test_cfg=None)
+        if model is None:
+            cfg.model.pretrained = None
+            if cfg.model.get('neck'):
+                if isinstance(cfg.model.neck, list):
+                    for neck_cfg in cfg.model.neck:
+                        if neck_cfg.get('rfp_backbone'):
+                            if neck_cfg.rfp_backbone.get('pretrained'):
+                                neck_cfg.rfp_backbone.pretrained = None
+                elif cfg.model.neck.get('rfp_backbone'):
+                    if cfg.model.neck.rfp_backbone.get('pretrained'):
+                        cfg.model.neck.rfp_backbone.pretrained = None
+            cfg.model.test_cfg.return_repr_vector = True
+            model = build_segmentor(cfg.model, train_cfg=None, test_cfg=None)
         model.CLASSES = target_classes
 
         fp16_cfg = cfg.get('fp16', None)

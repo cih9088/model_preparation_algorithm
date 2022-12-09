@@ -110,7 +110,9 @@ class DetectionTrainer(IncrDetectionStage):
         # cfg.dump(osp.join(cfg.work_dir, 'config.py'))
         # logger.info(f'Config:\n{cfg.pretty_text}')
 
-        model = build_detector(cfg.model)
+        model = kwargs.get("model", None)
+        if model is None:
+            model = build_detector(cfg.model)
         model.CLASSES = target_classes
 
         if self.distributed:

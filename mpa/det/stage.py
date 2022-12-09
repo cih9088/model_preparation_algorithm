@@ -120,10 +120,14 @@ class DetectionStage(Stage):
         if training:
             if 'dataset' in cfg.data.train:
                 train_cfg = self.get_data_cfg(cfg, "train")
-                train_cfg.otx_dataset = cfg.data.train.pop('otx_dataset', None)
-                train_cfg.labels = cfg.data.train.get('labels', None)
-                train_cfg.data_classes = cfg.data.train.pop('data_classes', None)
-                train_cfg.new_classes = cfg.data.train.pop('new_classes', None)
+                if cfg.data.train.get("otx_dataset", None) is not None:
+                    train_cfg.otx_dataset = cfg.data.train.pop("otx_dataset")
+                if cfg.data.train.get("labels", None) is not None:
+                    train_cfg.labels = cfg.data.train.get("labels")
+                if cfg.data.train.get("data_classes", None) is not None:
+                    train_cfg.data_classes = cfg.data.train.pop("data_classes")
+                if cfg.data.train.get("new_classes", None) is not None:
+                    train_cfg.new_classes = cfg.data.train.pop("new_classes")
 
     def configure_regularization(self, cfg, training):
         """Patch regularization parameters."""

@@ -91,7 +91,9 @@ class SegTrainer(SegStage):
                 CLASSES=target_classes)
 
         # Model
-        model = build_segmentor(cfg.model)
+        model = kwargs.get("model", None)
+        if model is None:
+            model = build_segmentor(cfg.model)
         model.CLASSES = target_classes
 
         # mmseg api does not implement fp16 config
