@@ -110,8 +110,10 @@ class DetectionTrainer(IncrDetectionStage):
         # cfg.dump(osp.join(cfg.work_dir, 'config.py'))
         # logger.info(f'Config:\n{cfg.pretty_text}')
 
-        model = kwargs.get("model", None)
-        if model is None:
+        model_builder = kwargs.get("model_builder", None)
+        if model_builder is not None:
+            model = model_builder(cfg)
+        else:
             model = build_detector(cfg.model)
         model.CLASSES = target_classes
 
@@ -132,11 +134,21 @@ class DetectionTrainer(IncrDetectionStage):
         best_ckpt_path = glob.glob(osp.join(cfg.work_dir, 'best_*.pth'))
         if len(best_ckpt_path) > 0:
             output_ckpt_path = best_ckpt_path[0]
-        return dict(final_ckpt=output_ckpt_path)
+        # NNCF model
+        compression_state_path = osp.join(cfg.work_dir, "compression_state.pth")
+        if not os.path.exists(compression_state_path):
+            compression_state_path = None
+        before_ckpt_path = osp.join(cfg.work_dir, "before_training.pth")
+        if not os.path.exists(before_ckpt_path):
+            before_ckpt_path = None
+        return dict(
+            final_ckpt=output_ckpt_path,
+            compression_state_path=compression_state_path,
+            before_ckpt_path=before_ckpt_path,
+        )
 
     def _modify_cfg_for_distributed(self, model, cfg):
         nn.SyncBatchNorm.convert_sync_batchnorm(model)
-
         if cfg.dist_params.get('linear_scale_lr', False):
             new_lr = len(cfg.gpu_ids) * cfg.optimizer.lr
             logger.info(f'enabled linear scaling rule to the learning rate. \

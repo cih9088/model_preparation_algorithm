@@ -15,6 +15,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Sequence, Tuple, Union
+
 import torch
 import torch.nn.functional as F
 
