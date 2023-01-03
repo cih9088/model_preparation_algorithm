@@ -9,17 +9,11 @@ import time
 from mmcv.utils import get_git_hash
 from mmdet import __version__
 from mmdet.apis import train_detector
-from mmdet.datasets import build_dataset
-from mmdet.models import build_detector
+from mmdet.datasets import build_dataset, build_dataloader
 from mmdet.utils import collect_env
 from mpa.modules.utils.task_adapt import extract_anchor_ratio
 from mpa.registry import STAGES
-from mpa.utils.logger import get_logger
-from torch import nn
-
-from .stage import DetectionStage
-
-from mpa.registry import STAGES
+from .stage import DetectionStage, build_detector
 from mpa.modules.utils.task_adapt import extract_anchor_ratio
 from mpa.utils.logger import get_logger
 from mpa.det.incremental import IncrDetectionStage
@@ -42,6 +36,7 @@ class DetectionTrainer(IncrDetectionStage):
         """
         self._init_logger()
         mode = kwargs.get('mode', 'train')
+        model_builder = kwargs.get("model_builder", build_detector)
         if mode not in self.mode:
             return {}
 

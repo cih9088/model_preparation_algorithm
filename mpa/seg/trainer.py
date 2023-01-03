@@ -13,12 +13,10 @@ from mmcv import get_git_hash
 from mmseg import __version__
 from mmseg.apis import train_segmentor
 from mmseg.datasets import build_dataset
-from mmseg.models import build_segmentor
 from mmseg.utils import collect_env
 
 from mpa.registry import STAGES
-from .stage import SegStage
-
+from mpa.seg.stage import SegStage, build_segmentor
 from mpa.utils.logger import get_logger
 from torch import nn
 
@@ -39,6 +37,7 @@ class SegTrainer(SegStage):
         """
         self._init_logger()
         mode = kwargs.get('mode', 'train')
+        model_builder = kwargs.get("model_builder", build_segmentor)
         if mode not in self.mode:
             return {}
 
@@ -99,15 +98,7 @@ class SegTrainer(SegStage):
             model = build_segmentor(cfg.model)
         model.CLASSES = target_classes
 
-        # mmseg api does not implement fp16 config
-        fp16_cfg = cfg.get('fp16', None)
-        if fp16_cfg is not None:
-            type = cfg.optimizer_config.get("type", "Fp16OptimizerHook")
-            if not type.startswith("Fp16"):
-                type = "Fp16" + type
-            cfg.optimizer_config.update(
-                dict(type=type, **fp16_cfg, distributed=self.distributed)
-            )
+        SegTrainer.configure_fp16_optimizer(cfg, distributed)
 
         if self.distributed:
             self._modify_cfg_for_distributed(model, cfg)

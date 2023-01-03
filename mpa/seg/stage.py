@@ -4,6 +4,7 @@
 
 import numpy as np
 from mmcv import ConfigDict
+from mmcv.runner import load_checkpoint
 from mmseg.utils import get_root_logger
 
 from mpa.stage import Stage
@@ -11,6 +12,24 @@ from mpa.utils.config_utils import update_or_add_custom_hook, recursively_update
 from mpa.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def build_segmentor(
+    config,
+    checkpoint=None,
+    device="cpu",
+    cfg_options=None,
+):
+    from mmseg.models import build_segmentor as origin_build_segmentor
+    if cfg_options is not None:
+        config.merge_from_dict(cfg_options)
+    model = origin_build_segmentor(config.model)
+    model = model.to(device)
+    checkpoint = checkpoint if checkpoint else config.get("load_from", None)
+    if checkpoint is not None:
+        load_checkpoint(model=model, filename=checkpoint, map_location=device)
+    return model
+
 
 class SegStage(Stage):
     def __init__(self, **kwargs):

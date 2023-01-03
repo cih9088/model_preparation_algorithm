@@ -8,8 +8,8 @@ from mmcls.models.builder import CLASSIFIERS
 from mmcls.models.classifiers.base import BaseClassifier
 from mmcls.models.classifiers.image import ImageClassifier
 from mpa.modules.utils.task_adapt import map_class_names
-from mpa.modules.hooks.recording_forward_hooks import FeatureVectorHook, ReciproCAMHook
 from mpa.utils.logger import get_logger
+from mpa.deploy.utils import is_mmdeploy_enabled
 from collections import OrderedDict
 import functools
 
@@ -39,7 +39,6 @@ class SAMImageClassifier(ImageClassifier):
             self.hierarchical = kwargs.pop('hierarchical')
         super().__init__(**kwargs)
         self.is_export = False
-        self.featuremap = None
         # Hooks for redirect state_dict load/save
         self._register_state_dict_hook(self.state_dict_hook)
         self._register_load_state_dict_pre_hook(
@@ -284,23 +283,35 @@ class SAMImageClassifier(ImageClassifier):
         if isinstance(x, (tuple, list)):
             x = x[-1]
 
-        if torch.onnx.is_in_onnx_export():
-            self.featuremap = x
 
         if self.with_neck:
             x = self.neck(x)
 
         return x
 
-    def simple_test(self, img, img_metas):
-        """Test without augmentation.
-           Overriding for OpenVINO export with features
-        """
-        x = self.extract_feat(img)
-        logits = self.head.simple_test(x)
-        if self.featuremap is not None and torch.onnx.is_in_onnx_export():
-            saliency_map = ReciproCAMHook(self).func(self.featuremap)
-            feature_vector = FeatureVectorHook.func(self.featuremap)
-            return logits, feature_vector, saliency_map
-        else:
-            return logits
+
+if is_mmdeploy_enabled():
+    from mmdeploy.core import FUNCTION_REWRITER
+    from mpa.modules.hooks.recording_forward_hooks import FeatureVectorHook, ReciproCAMHook
+
+    @FUNCTION_REWRITER.register_rewriter(
+        "mpa.modules.models.classifiers.sam_classifier."
+        "SAMImageClassifier.extract_feat"
+    )
+    def sam_image_classifier__extract_feat(ctx, self, img):
+        feat = self.backbone(img)
+        backbone_feat = feat
+        if self.with_neck:
+            feat = self.neck(backbone_feat)
+        return feat, backbone_feat
+
+    @FUNCTION_REWRITER.register_rewriter(
+        "mpa.modules.models.classifiers.sam_classifier."
+        "SAMImageClassifier.simple_test"
+    )
+    def sam_image_classifier__simple_test(ctx, self, img, img_metas):
+        feat, backbone_feat = self.extract_feat(img)
+        logit = self.head.simple_test(feat)
+        saliency_map = ReciproCAMHook(self).func(backbone_feat)
+        feature_vector = FeatureVectorHook.func(backbone_feat)
+        return logit, feature_vector, saliency_map

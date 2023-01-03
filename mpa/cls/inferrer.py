@@ -8,9 +8,9 @@ import mmcv
 import numpy as np
 import torch
 from mmcls.datasets import build_dataloader, build_dataset
-from mmcls.models import build_classifier
 from mmcv.runner import load_checkpoint, wrap_fp16_model
-from mpa.cls.stage import ClsStage
+
+from mpa.cls.stage import ClsStage, build_classifier
 from mpa.modules.hooks.recording_forward_hooks import ReciproCAMHook, FeatureVectorHook
 from mpa.modules.utils.task_adapt import prob_extractor
 from mpa.registry import STAGES
@@ -32,14 +32,14 @@ class ClsInferrer(ClsStage):
         dump_features = kwargs.get('dump_features', False)
         dump_saliency_map = kwargs.get('dump_saliency_map', False)
         mode = kwargs.get('mode', 'train')
-        model_builder = kwargs.get("model_builder", None)
+        model_builder = kwargs.get("model_builder", build_classifier)
         if mode not in self.mode:
             return {}
 
         cfg = self.configure(model_cfg, model_ckpt, data_cfg, training=False, **kwargs)
 
         mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
-        outputs = self._infer(cfg, model_builder, dump_features, dump_saliency_map)
+        outputs = self.infer(cfg, model_builder, dump_features, dump_saliency_map)
         if cfg.get('task_adapt', False) and self.extract_prob:
             output_file_path = osp.join(cfg.work_dir, 'pre_stage_res.npy')
             np.save(output_file_path, outputs, allow_pickle=True)
@@ -52,7 +52,7 @@ class ClsInferrer(ClsStage):
                 outputs=outputs
                 )
 
-    def _infer(self, cfg, model_builder=None, dump_features=False, dump_saliency_map=False):
+    def infer(self, cfg, model_builder=None, dump_features=False, dump_saliency_map=False):
         if cfg.get('task_adapt', False) and not hasattr(self, 'eval'):
             dataset_cfg = cfg.data.train.copy()
             dataset_cfg.pipeline = cfg.data.test.pipeline
@@ -71,17 +71,14 @@ class ClsInferrer(ClsStage):
             persistent_workers=False)
 
         # build the model and load checkpoint
-        if model_builder is not None:
-            model = model_builder(cfg)
-        else:
-            model = build_classifier(cfg.model)
+        if model_builder is None:
+            model_builder = build_classifier
+        model = model_builder(cfg)
         self.extract_prob = hasattr(model, 'extract_prob')
+
         fp16_cfg = cfg.get('fp16', None)
         if fp16_cfg is not None:
             wrap_fp16_model(model)
-        if cfg.load_from is not None:
-            logger.info('Load checkpoint from ' + cfg.load_from)
-            _ = load_checkpoint(model, cfg.load_from, map_location='cpu')
 
         model.eval()
         model = self._put_model_on_gpu(model, cfg)

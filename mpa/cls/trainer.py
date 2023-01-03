@@ -15,21 +15,14 @@ import warnings
 
 from torch import nn
 import mmcv
-from mmcv.runner import DistSamplerSeedHook, Fp16OptimizerHook, build_optimizer, build_runner, HOOKS
 
 from mmcls import __version__
 from mmcls.apis import train_model
 from mmcls.datasets import build_dataset, build_dataloader
-from mmcls.models import build_classifier
 from mmcls.utils import collect_env
-from mmcls.core import DistOptimizerHook
 
 from mpa.registry import STAGES
-from mpa.modules.datasets.composed_dataloader import ComposedDL
-from mpa.stage import Stage
-from mpa.cls.stage import ClsStage
-from mpa.modules.hooks.eval_hook import CustomEvalHook, DistCustomEvalHook
-from mpa.modules.hooks.fp16_sam_optimizer_hook import Fp16SAMOptimizerHook
+from mpa.cls.stage import ClsStage, build_classifier
 from mpa.utils.logger import get_logger
 
 logger = get_logger()
@@ -42,6 +35,7 @@ class ClsTrainer(ClsStage):
         """
         self._init_logger()
         mode = kwargs.get('mode', 'train')
+        model_builder = kwargs.get("model_builder", build_classifier)
         if mode not in self.mode:
             return {}
 
@@ -57,10 +51,7 @@ class ClsTrainer(ClsStage):
                     dash_line)
 
         # Data
-        if 'unlabeled' in cfg.data:
-            datasets = [[build_dataset(cfg.data.train), build_dataset(cfg.data.unlabeled)]]
-        else:
-            datasets = [build_dataset(cfg.data.train)]
+        datasets = [build_dataset(cfg.data.train)]
 
         # Dataset for HPO
         hp_config = kwargs.get('hp_config', None)
