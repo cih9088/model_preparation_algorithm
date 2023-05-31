@@ -18,6 +18,7 @@ import mpa.modules.datasets.cls_csv_dataset
 import mpa.modules.datasets.cls_csv_incr_dataset
 import mpa.modules.datasets.cls_dir_dataset
 import mpa.modules.datasets.multi_cls_dataset
+import mpa.modules.datasets.tvds_split
 
 import mpa.modules.hooks
 

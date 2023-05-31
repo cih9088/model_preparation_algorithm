@@ -7,6 +7,7 @@ import torch
 from mmcv.parallel import MMDataParallel, is_module_wrapper
 from mmcv.runner import load_checkpoint
 
+from mmdet.core import encode_mask_results
 from mmdet.datasets import build_dataloader, build_dataset, replace_ImageToTensor
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
@@ -102,7 +103,7 @@ class DetectionInferrer(DetectionStage):
             shuffle=False)
 
         # Target classes
-        if 'task_adapt' in cfg:
+        if cfg.get('task_adapt', None):
             target_classes = cfg.task_adapt.final
             if len(target_classes) < 1:
                 raise KeyError(f'target_classes={target_classes} is empty check the metadata from model ckpt or recipe '
@@ -183,6 +184,9 @@ class DetectionInferrer(DetectionStage):
                 for data in data_loader:
                     with torch.no_grad():
                         result = eval_model(return_loss=False, rescale=True, **data)
+                        if isinstance(result[0], tuple):
+                            result = [(bbox_results, encode_mask_results(mask_results), *other)
+                                      for bbox_results, mask_results, *other in result]
                     eval_predictions.extend(result)
 
         for key in [

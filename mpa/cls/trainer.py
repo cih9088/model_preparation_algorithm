@@ -112,8 +112,8 @@ class ClsTrainer(ClsStage):
                 cfg.optimizer.lr = new_lr
 
         # Save config
-        # cfg.dump(osp.join(cfg.work_dir, 'config.yaml')) # FIXME bug to save
-        # logger.info(f'Config:\n{cfg.pretty_text}')
+        cfg.dump(osp.join(cfg.work_dir, 'config.yaml'))  # FIXME bug to save
+        logger.info(f'Config:\n{cfg.pretty_text}')
 
         if distributed:
             os.environ['MASTER_ADDR'] = cfg.dist_params.get('master_addr', 'localhost')

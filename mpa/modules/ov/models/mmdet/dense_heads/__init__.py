@@ -6,3 +6,4 @@
 from .mmov_yolov3_head import MMOVYOLOV3Head
 from .mmov_ssd_head import MMOVSSDHead
 from .mmov_rpn_head import MMOVRPNHead
+from .mmov_yolact_head import MMOVYOLACTHead, MMOVYOLACTProtonet

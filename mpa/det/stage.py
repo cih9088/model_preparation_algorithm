@@ -23,8 +23,13 @@ class DetectionStage(Stage):
         """
         logger.info(f'configure!: training={training}')
 
-        # Recipe + model
         cfg = self.cfg
+
+        # Data
+        if data_cfg:
+            cfg.merge_from_dict(data_cfg)
+
+        # Recipe + model
         if model_cfg:
             if hasattr(model_cfg, 'model'):
                 cfg.merge_from_dict(model_cfg._cfg_dict)
@@ -66,13 +71,10 @@ class DetectionStage(Stage):
             logger.info(f'Overriding cfg.load_from -> {pretrained}')
             cfg.load_from = pretrained  # Overriding by stage input
 
-        # Data
-        if data_cfg:
-            cfg.merge_from_dict(data_cfg)
         self.configure_data(cfg, training, **kwargs)
 
         # Task
-        if 'task_adapt' in cfg:
+        if cfg.get('task_adapt', None):
             self.configure_task(cfg, training, **kwargs)
 
         # Regularization
@@ -80,7 +82,7 @@ class DetectionStage(Stage):
             self.configure_regularization(cfg)
 
         # Other hyper-parameters
-        if 'hyperparams' in cfg:
+        if cfg.get('hyperparams', None):
             self.configure_hyperparams(cfg, training, **kwargs)
 
         # Hooks
@@ -136,10 +138,18 @@ class DetectionStage(Stage):
                 )
             if 'dataset' in cfg.data.train:
                 train_cfg = self.get_train_data_cfg(cfg)
-                train_cfg.ote_dataset = cfg.data.train.pop('ote_dataset', None)
-                train_cfg.labels = cfg.data.train.get('labels', None)
-                train_cfg.data_classes = cfg.data.train.pop('data_classes', None)
-                train_cfg.new_classes = cfg.data.train.pop('new_classes', None)
+                item = cfg.data.train.pop('ote_dataset', None)
+                if item is not None:
+                    train_cfg.ote_dataset = item
+                item = cfg.data.train.pop('labels', None)
+                if item is not None:
+                    train_cfg.labels = item
+                item = cfg.data.train.pop('data_classes', None)
+                if item is not None:
+                    train_cfg.data_classes = item
+                item = cfg.data.train.pop('new_classes', None)
+                if item is not None:
+                    train_cfg.new_classes = item
 
     def configure_task(self, cfg, training, **kwargs):
         """Adjust settings for task adaptation

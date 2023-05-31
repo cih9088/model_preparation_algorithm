@@ -1,0 +1,23 @@
+workflow_hooks:
+    - type: WFProfileHook
+      name: profile_hook
+
+stages:
+
+    - name: final-eval
+      type: DetectionEvaluator
+      task: detection
+      mode: train
+      config: {{ fileDirname }}/stages/detection/eval_only.py
+
+    - name: eval-only
+      type: DetectionEvaluator
+      task: detection
+      mode: eval
+      config: {{ fileDirname }}/stages/detection/eval_only.py
+
+    - name: infer-only
+      type: DetectionInferrer
+      task: detection
+      mode: infer
+      config: {{ fileDirname }}/stages/detection/eval_only.py

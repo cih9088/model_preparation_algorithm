@@ -88,7 +88,7 @@ class DetectionTrainer(DetectionStage):
                 datasets[0] = hpopt.createHpoDataset(datasets[0], hp_config)
 
         # Target classes
-        if 'task_adapt' in cfg:
+        if cfg.get('task_adapt', None):
             target_classes = cfg.task_adapt.get('final', [])
         else:
             target_classes = datasets[0].CLASSES
@@ -114,8 +114,8 @@ class DetectionTrainer(DetectionStage):
                 cfg.optimizer.lr = new_lr
 
         # Save config
-        # cfg.dump(osp.join(cfg.work_dir, 'config.py'))
-        # logger.info(f'Config:\n{cfg.pretty_text}')
+        cfg.dump(osp.join(cfg.work_dir, 'config.py'))
+        logger.info(f'Config:\n{cfg.pretty_text}')
 
         if distributed:
             os.environ['MASTER_ADDR'] = cfg.dist_params.get('master_addr', 'localhost')

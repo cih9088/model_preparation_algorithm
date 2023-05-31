@@ -1,0 +1,9 @@
+workflow_hooks:
+    - type: WFProfileHook
+      name: profile_hook
+
+stages:
+  - name: evaluation
+    type: ClsEvaluator
+    mode: eval
+    config: {{ fileDirname }}/stages/classification/finetune.yaml

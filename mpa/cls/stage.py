@@ -27,8 +27,13 @@ class ClsStage(Stage):
         """
         logger.info(f'configure: training={training}')
 
-        # Recipe + model
         cfg = self.cfg
+
+        # Data
+        if data_cfg:
+            cfg.merge_from_dict(data_cfg)
+
+        # Recipe + model
         if model_cfg:
             if hasattr(cfg, 'model'):
                 cfg.merge_from_dict(model_cfg._cfg_dict)
@@ -70,9 +75,6 @@ class ClsStage(Stage):
             logger.info(f'Overriding cfg.load_from -> {pretrained}')
             cfg.load_from = pretrained
 
-        # Data
-        if data_cfg:
-            cfg.merge_from_dict(data_cfg)
         self.configure_data(cfg, training, **kwargs)
 
         # Task
@@ -86,7 +88,8 @@ class ClsStage(Stage):
         else:
             if 'num_classes' not in cfg.data:
                 cfg.data.num_classes = len(cfg.data.train.get('classes', []))
-            cfg.model.head.num_classes = cfg.data.num_classes
+            if cfg.model.head.get("num_classes", None):
+                cfg.model.head.num_classes = cfg.data.num_classes
 
         if cfg.model.head.get('topk', False) and isinstance(cfg.model.head.topk, tuple):
             cfg.model.head.topk = (1,) if cfg.model.head.num_classes < 5 else (1, 5)

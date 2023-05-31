@@ -21,8 +21,13 @@ class SegStage(Stage):
         """
         logger.info(f'configure!: training={training}')
 
-        # Recipe + model
         cfg = self.cfg
+
+        # Data
+        if data_cfg:
+            cfg.merge_from_dict(data_cfg)
+
+        # Recipe + model
         if model_cfg:
             if hasattr(model_cfg, 'model'):
                 cfg.merge_from_dict(model_cfg._cfg_dict)
@@ -66,10 +71,6 @@ class SegStage(Stage):
         if pretrained and isinstance(pretrained, str):
             logger.info(f'Overriding cfg.load_from -> {pretrained}')
             cfg.load_from = pretrained  # Overriding by stage input
-
-        # Data
-        if data_cfg:
-            cfg.merge_from_dict(data_cfg)
 
         if training:
             if cfg.data.get('val', False):

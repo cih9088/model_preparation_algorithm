@@ -1,0 +1,17 @@
+workflow_hooks:
+    - type: WFProfileHook
+      name: profile_hook
+
+stages:
+
+    - name: final-eval
+      type: SegEvaluator
+      task: segmentation
+      mode: train
+      config: {{ fileDirname }}/stages/segmentation/finetune.py
+
+    - name: eval-only
+      type: SegEvaluator
+      task: segmentation
+      mode: eval
+      config: {{ fileDirname }}/stages/segmentation/finetune.py

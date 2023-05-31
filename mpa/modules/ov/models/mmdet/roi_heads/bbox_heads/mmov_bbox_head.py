@@ -91,26 +91,13 @@ class MMOVBBoxHead(BBoxHead):
         # but faster_rcnn_resnet50_coco from OMZ is
         # that FG labels to [1, num_class] and BG labels to 0
         if self._background_index is not None and cls_score is not None:
-            idx = torch.cat(
-                (
-                    torch.arange(0, self._background_index, device=cls_score.device),
-                    torch.arange(
-                        self._background_index + 1,
-                        cls_score.shape[-1],
-                        device=cls_score.device,
-                    ),
-                )
-            )
-
             cls_score = torch.cat(
                 (
-                    torch.index_select(cls_score, -1, idx),
-                    torch.index_select(
-                        cls_score,
-                        -1,
-                        torch.tensor([self._background_index], device=cls_score.device)
-                    ),
-                ), -1
+                    cls_score[:, :self._background_index],
+                    cls_score[:, self._background_index + 1:],
+                    cls_score[:, self._background_index:self._background_index + 1],
+                ),
+                -1,
             )
 
         return (cls_score, bbox_pred)
